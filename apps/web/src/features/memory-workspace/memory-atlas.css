@@ -187,3 +187,29 @@
 .memory-review > .memory-workspace-error, .memory-review > .memory-jobs { grid-column: 1 / -1; }
 .memory-review-issues h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #a8c7d9; }
 @media (max-width: 1000px) { .memory-review { grid-template-columns: minmax(0, 1fr); padding: 14px; } }
+
+/* Memory graph size selector (issue #62). */
+.memory-workspace-limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fb4c7;
+}
+
+.memory-workspace-limit select {
+  background: #101b26;
+  color: #c6dfed;
+  border: 1px solid #24384d;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.memory-workspace-limit select:focus-visible {
+  outline: 1px solid #57ccff;
+}
