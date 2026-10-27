@@ -1,0 +1,195 @@
+{
+  "browser": "Chrome/156.0.8078.47",
+  "capturedAt": "2026-10-27T08:27:28.870Z",
+  "sizes": [
+    {
+      "size": 2000,
+      "env": {
+        "webgl2": true,
+        "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x00001912) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "vendor": "Google Inc. (Intel)",
+        "hardwareConcurrency": 4,
+        "contracts": true,
+        "contractsError": null
+      },
+      "synth": {
+        "ms": 2.7,
+        "nodes": 2000,
+        "edges": 5921
+      },
+      "layout": {
+        "chunkMs": 3487.2,
+        "cumulativeMs": 3487.2,
+        "steps": 8,
+        "done": true
+      },
+      "atlas": {
+        "ms": 255.7,
+        "nodes": 2000,
+        "edges": 5921
+      },
+      "payload": {
+        "bytes": 1536218,
+        "parseMs": 2.9,
+        "validateMs": 37.1,
+        "validateError": null
+      },
+      "attach": {
+        "attachMs": 40.4,
+        "firstRenderMs": 13.1
+      },
+      "frames1": {
+        "frames": 250,
+        "renderP50": 0.6,
+        "renderP95": 1,
+        "renderMax": 2.1,
+        "gapP50": 16.7,
+        "gapP95": 17.3
+      },
+      "frames2": {
+        "frames": 500,
+        "renderP50": 0.6,
+        "renderP95": 1.1,
+        "renderMax": 2.1,
+        "gapP50": 16.7,
+        "gapP95": 17.3
+      },
+      "picks": {
+        "gridP50": 0,
+        "gridP95": 0,
+        "steadyP50": 0,
+        "steadyP95": 0,
+        "steadyMax": 0.1
+      },
+      "longTasks": {
+        "count": 2,
+        "max": 370,
+        "sum": 424
+      }
+    },
+    {
+      "size": 10000,
+      "env": {
+        "webgl2": true,
+        "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x00001912) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "vendor": "Google Inc. (Intel)",
+        "hardwareConcurrency": 4,
+        "contracts": true,
+        "contractsError": null
+      },
+      "synth": {
+        "ms": 47.4,
+        "nodes": 10000,
+        "edges": 29865
+      },
+      "layout": {
+        "chunkMs": 26112.2,
+        "cumulativeMs": 26112.2,
+        "steps": 8,
+        "done": true
+      },
+      "atlas": {
+        "ms": 1142.5,
+        "nodes": 10000,
+        "edges": 29865
+      },
+      "payload": {
+        "bytes": 7895475,
+        "parseMs": 14.2,
+        "validateMs": 310.2,
+        "validateError": null
+      },
+      "attach": {
+        "attachMs": 22.8,
+        "firstRenderMs": 14.6
+      },
+      "frames1": {
+        "frames": 200,
+        "renderP50": 1.4,
+        "renderP95": 3.7,
+        "renderMax": 103.3,
+        "gapP50": 16.7,
+        "gapP95": 17.8
+      },
+      "frames2": {
+        "frames": 400,
+        "renderP50": 1.4,
+        "renderP95": 2.8,
+        "renderMax": 103.3,
+        "gapP50": 16.7,
+        "gapP95": 17.7
+      },
+      "picks": {
+        "gridP50": 0,
+        "gridP95": 0,
+        "steadyP50": 0,
+        "steadyP95": 0,
+        "steadyMax": 0.1
+      },
+      "longTasks": {
+        "count": 5,
+        "max": 336,
+        "sum": 643
+      }
+    },
+    {
+      "size": 50000,
+      "env": {
+        "webgl2": true,
+        "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x00001912) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "vendor": "Google Inc. (Intel)",
+        "hardwareConcurrency": 4,
+        "contracts": true,
+        "contractsError": null
+      },
+      "synth": {
+        "ms": 76.6,
+        "nodes": 50000,
+        "edges": 149000
+      },
+      "layout": {
+        "chunkMs": 9.2,
+        "cumulativeMs": 129758.8,
+        "steps": 1,
+        "done": true
+      },
+      "atlas": {
+        "ms": 7490.7,
+        "nodes": 50000,
+        "edges": 149000
+      },
+      "payload": {
+        "bytes": 39831623,
+        "parseMs": 276.9,
+        "validateMs": 1048.3,
+        "validateError": null
+      },
+      "attach": {
+        "attachMs": 35.5,
+        "firstRenderMs": 35.7
+      },
+      "frames1": {
+        "frames": 120,
+        "renderP50": 7.5,
+        "renderP95": 9.3,
+        "renderMax": 11.5,
+        "gapP50": 16.7,
+        "gapP95": 17.9
+      },
+      "picks": {
+        "gridP50": 0,
+        "gridP95": 0.2,
+        "steadyP50": 0,
+        "steadyP95": 0,
+        "steadyMax": 0.1
+      },
+      "longTasks": {
+        "count": 3,
+        "max": 275,
+        "sum": 398
+      }
+    }
+  ],
+  "note": "layout is invoked synchronously by the harness; the app runs the same generator in memory-network-layout.worker.ts",
+  "harness": "scripts/bench-memory-3d.mjs"
+}
