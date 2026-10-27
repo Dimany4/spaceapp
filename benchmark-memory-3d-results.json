@@ -1,6 +1,6 @@
 {
-  "browser": "Chrome/156.0.8078.47",
-  "capturedAt": "2026-10-27T08:27:28.870Z",
+  "browser": "Chrome/156.0.8078.48",
+  "capturedAt": "2026-10-27T13:49:11.398Z",
   "sizes": [
     {
       "size": 2000,
@@ -9,62 +9,63 @@
         "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x00001912) Direct3D11 vs_5_0 ps_5_0, D3D11)",
         "vendor": "Google Inc. (Intel)",
         "hardwareConcurrency": 4,
+        "devicePixelRatio": 1,
         "contracts": true,
         "contractsError": null
       },
       "synth": {
-        "ms": 2.7,
+        "ms": 3.4,
         "nodes": 2000,
         "edges": 5921
       },
       "layout": {
-        "chunkMs": 3487.2,
-        "cumulativeMs": 3487.2,
-        "steps": 8,
-        "done": true
+        "chunkMs": 3371.1,
+        "cumulativeMs": 3371.1,
+        "steps": 8
       },
       "atlas": {
-        "ms": 255.7,
+        "ms": 35.6,
         "nodes": 2000,
         "edges": 5921
       },
       "payload": {
         "bytes": 1536218,
-        "parseMs": 2.9,
-        "validateMs": 37.1,
+        "parseMs": 2.8,
+        "validateMs": 33.8,
         "validateError": null
       },
       "attach": {
-        "attachMs": 40.4,
-        "firstRenderMs": 13.1
+        "attachMs": 38.2,
+        "firstRenderMs": 12
       },
       "frames1": {
         "frames": 250,
-        "renderP50": 0.6,
-        "renderP95": 1,
-        "renderMax": 2.1,
+        "renderP50": 0.4,
+        "renderP95": 0.6,
+        "renderMax": 0.9,
         "gapP50": 16.7,
-        "gapP95": 17.3
+        "gapP95": 17.1
       },
       "frames2": {
-        "frames": 500,
-        "renderP50": 0.6,
-        "renderP95": 1.1,
-        "renderMax": 2.1,
+        "frames": 250,
+        "renderP50": 0.4,
+        "renderP95": 0.7,
+        "renderMax": 1.6,
         "gapP50": 16.7,
-        "gapP95": 17.3
+        "gapP95": 17
       },
       "picks": {
         "gridP50": 0,
         "gridP95": 0,
+        "gridSamples": 200,
         "steadyP50": 0,
         "steadyP95": 0,
         "steadyMax": 0.1
       },
       "longTasks": {
         "count": 2,
-        "max": 370,
-        "sum": 424
+        "max": 354,
+        "sum": 415
       }
     },
     {
@@ -74,62 +75,63 @@
         "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x00001912) Direct3D11 vs_5_0 ps_5_0, D3D11)",
         "vendor": "Google Inc. (Intel)",
         "hardwareConcurrency": 4,
+        "devicePixelRatio": 1,
         "contracts": true,
         "contractsError": null
       },
       "synth": {
-        "ms": 47.4,
+        "ms": 7.9,
         "nodes": 10000,
         "edges": 29865
       },
       "layout": {
-        "chunkMs": 26112.2,
-        "cumulativeMs": 26112.2,
-        "steps": 8,
-        "done": true
+        "chunkMs": 23552.3,
+        "cumulativeMs": 23552.3,
+        "steps": 8
       },
       "atlas": {
-        "ms": 1142.5,
+        "ms": 40.9,
         "nodes": 10000,
         "edges": 29865
       },
       "payload": {
         "bytes": 7895475,
-        "parseMs": 14.2,
-        "validateMs": 310.2,
+        "parseMs": 11.4,
+        "validateMs": 144.6,
         "validateError": null
       },
       "attach": {
-        "attachMs": 22.8,
-        "firstRenderMs": 14.6
+        "attachMs": 20.8,
+        "firstRenderMs": 13.9
       },
       "frames1": {
         "frames": 200,
-        "renderP50": 1.4,
-        "renderP95": 3.7,
-        "renderMax": 103.3,
+        "renderP50": 1.7,
+        "renderP95": 2.4,
+        "renderMax": 3,
         "gapP50": 16.7,
-        "gapP95": 17.8
+        "gapP95": 16.9
       },
       "frames2": {
-        "frames": 400,
-        "renderP50": 1.4,
-        "renderP95": 2.8,
-        "renderMax": 103.3,
+        "frames": 200,
+        "renderP50": 1.7,
+        "renderP95": 2.2,
+        "renderMax": 5.3,
         "gapP50": 16.7,
-        "gapP95": 17.7
+        "gapP95": 16.9
       },
       "picks": {
         "gridP50": 0,
         "gridP95": 0,
+        "gridSamples": 200,
         "steadyP50": 0,
         "steadyP95": 0,
         "steadyMax": 0.1
       },
       "longTasks": {
-        "count": 5,
-        "max": 336,
-        "sum": 643
+        "count": 2,
+        "max": 315,
+        "sum": 367
       }
     },
     {
@@ -139,57 +141,60 @@
         "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x00001912) Direct3D11 vs_5_0 ps_5_0, D3D11)",
         "vendor": "Google Inc. (Intel)",
         "hardwareConcurrency": 4,
+        "devicePixelRatio": 1,
         "contracts": true,
         "contractsError": null
       },
       "synth": {
-        "ms": 76.6,
+        "ms": 72.6,
         "nodes": 50000,
         "edges": 149000
       },
       "layout": {
-        "chunkMs": 9.2,
-        "cumulativeMs": 129758.8,
-        "steps": 1,
-        "done": true
+        "chunkMs": 5.8,
+        "cumulativeMs": 101797.8,
+        "steps": 1
       },
       "atlas": {
-        "ms": 7490.7,
+        "ms": 187.8,
         "nodes": 50000,
         "edges": 149000
       },
       "payload": {
         "bytes": 39831623,
-        "parseMs": 276.9,
-        "validateMs": 1048.3,
+        "parseMs": 84.4,
+        "validateMs": 768.7,
         "validateError": null
       },
       "attach": {
-        "attachMs": 35.5,
-        "firstRenderMs": 35.7
+        "attachMs": 16.7,
+        "firstRenderMs": 31.6
       },
       "frames1": {
         "frames": 120,
-        "renderP50": 7.5,
-        "renderP95": 9.3,
-        "renderMax": 11.5,
+        "renderP50": 5.9,
+        "renderP95": 14.5,
+        "renderMax": 17,
         "gapP50": 16.7,
-        "gapP95": 17.9
+        "gapP95": 17
       },
       "picks": {
         "gridP50": 0,
-        "gridP95": 0.2,
+        "gridP95": 0.3,
+        "gridSamples": 20,
         "steadyP50": 0,
         "steadyP95": 0,
         "steadyMax": 0.1
       },
       "longTasks": {
-        "count": 3,
-        "max": 275,
-        "sum": 398
+        "count": 2,
+        "max": 242,
+        "sum": 293
       }
     }
   ],
-  "note": "layout is invoked synchronously by the harness; the app runs the same generator in memory-network-layout.worker.ts",
-  "harness": "scripts/bench-memory-3d.mjs"
+  "note": "layout is called synchronously by the harness; the app runs the same generator in memory-network-layout.worker.ts",
+  "pickMethod": "grid pass: camera yaw +0.01 then render() before each timed hit(); steady pass: hit() only",
+  "harness": "scripts/bench-memory-3d.mjs",
+  "completed": true
 }

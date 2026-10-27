@@ -59,6 +59,9 @@ async function waitFor(url, tries = 120, gap = 1000) {
 p(`bench-memory-3d: sizes=${selected.join(',')} port=${PORT} chrome=${CHROME}`);
 p('starting vite dev server');
 const dev = spawn(process.execPath, [VITE_BIN, '--port', String(PORT), '--strictPort'], { cwd: WEB });
+// A missing binary must fail the run with a readable reason, not with an unhandled
+// 'error' event that leaves a stack trace and an orphaned browser behind (review #89).
+dev.on('error', (e) => shutdown(1, `vite dev server could not start: ${e.message}`));
 if (!(await waitFor(`http://127.0.0.1:${PORT}/`))) {
   p('vite did not start');
   process.exit(1);
@@ -73,6 +76,7 @@ const chrome = spawn(CHROME, [
   '--no-first-run', '--no-default-browser-check', '--disable-extensions',
   '--window-size=1600,1000', '--use-angle=d3d11', '--enable-unsafe-swiftshader', 'about:blank',
 ], { windowsHide: true });
+chrome.on('error', (e) => shutdown(1, `chrome could not start (CHROME_PATH=${CHROME}): ${e.message}`));
 if (!(await waitFor(`http://127.0.0.1:${CDP_PORT}/json/version`, 60, 500))) {
   p('cdp did not come up');
   process.exit(1);
@@ -104,17 +108,47 @@ async function openPage() {
   await send('Runtime.enable', {}, sid);
   // Wait for the *app* document, not for the first document that reports "complete":
   // a freshly created target answers with about:blank in which '/src/...' cannot resolve.
+  let ready = false;
+  let lastSeen = '';
   for (let i = 0; i < 120; i++) {
     const r = await send('Runtime.evaluate', { expression: 'document.readyState + "|" + location.href', returnByValue: true }, sid);
-    const v = r.result?.result?.value || '';
-    if (v.startsWith('complete|') && v.includes(String(PORT))) break;
+    lastSeen = r.result?.result?.value || '';
+    if (lastSeen.startsWith('complete|') && lastSeen.includes(String(PORT))) { ready = true; break; }
     await sleep(500);
   }
+  // Never hand back a session that is not the app document: every later evaluation would
+  // fail one by one, the phases would record nothing, and the run would still exit 0.
+  if (!ready) await shutdown(1, `page for port ${PORT} never reached the app document (last="${lastSeen}")`);
   return sid;
 }
 
 const RESULTS = { browser: version.Browser, capturedAt: new Date().toISOString(), sizes: [] };
-const dump = () => writeFileSync(OUT, JSON.stringify(RESULTS, null, 2), 'utf8');
+function dump() { writeFileSync(OUT, JSON.stringify(RESULTS, null, 2), 'utf8'); }
+
+// One exit path for both outcomes: a failed run keeps its partial results on disk with an
+// `aborted` marker and exits non-zero, so partial numbers can never be read as evidence.
+async function shutdown(code, reason) {
+  RESULTS.completed = code === 0;
+  if (reason) {
+    RESULTS.aborted = reason;
+    p(`FAILED: ${reason}`);
+  }
+  try { if (targetId) await send('Target.closeTarget', { targetId }); } catch { /* ignore */ }
+  targetId = null;
+  try { chrome.kill(); } catch { /* ignore */ }
+  try { dev.kill(); } catch { /* ignore */ }
+  dump();
+  p(`results: ${OUT}`);
+  process.exit(code);
+}
+
+// A phase that timed out or threw leaves `value === undefined`; continuing would record a
+// half-filled entry that still looks like a successful measurement.
+async function phase(label, pending) {
+  const r = await pending;
+  if (r.value === undefined) await shutdown(1, `${label}: ${r.timedOut ? 'timeout' : r.error || 'no value'}`);
+  return r.value;
+}
 
 async function call(label, expression, timeoutMs) {
   const t0 = Date.now();
@@ -215,9 +249,14 @@ const PHASES = {
     return { frames: ${n}, renderP50: q(rm, .5), renderP95: q(rm, .95), renderMax: +Math.max(...rm).toFixed(3),
       gapP50: q(gm, .5), gapP95: q(gm, .95) }; })()`,
   picks: (grid, steady) => `(() => { const b = window.__bench; ${qExpr}
-    const g1 = []; for (let i = 0; i < ${grid}; i++) { b.cameraRef.current.yaw += 0.01; const s = performance.now(); b.att.hit(Math.random() * 1600, Math.random() * 1000); g1.push(performance.now() - s); }
+    // The "camera moved" pass renders between picks: render() re-projects the nodes and marks
+    // the spatial hash dirty, so each timed hit() is the real rebuild-and-lookup path. Without
+    // it the pass measured lookups against a grid left over from the previous render (#89).
+    const g1 = []; for (let i = 0; i < ${grid}; i++) { b.cameraRef.current.yaw += 0.01; b.att.render();
+      const s = performance.now(); b.att.hit(Math.random() * 1600, Math.random() * 1000); g1.push(performance.now() - s); }
     const g2 = []; for (let i = 0; i < ${steady}; i++) { const s = performance.now(); b.att.hit(Math.random() * 1600, Math.random() * 1000); g2.push(performance.now() - s); }
-    return { gridP50: q(g1, .5), gridP95: q(g1, .95), steadyP50: q(g2, .5), steadyP95: q(g2, .95), steadyMax: +Math.max(...g2).toFixed(4) }; })()`,
+    return { gridP50: q(g1, .5), gridP95: q(g1, .95), gridSamples: g1.length, steadyP50: q(g2, .5),
+      steadyP95: q(g2, .95), steadyMax: +Math.max(...g2).toFixed(4) }; })()`,
   longtasks: () => `(() => { const b = window.__bench; const lt = b.longTasks || [];
     return { count: lt.length, max: lt.length ? Math.max(...lt) : 0, sum: +(lt.reduce((a, x) => a + x, 0)).toFixed(2) }; })()`,
   dispose: () => `(() => { const b = window.__bench; try { b.att.dispose(); } catch {}
@@ -239,29 +278,28 @@ for (const plan of PLAN) {
   p(`\n===== size ${plan.size} (fresh page) =====`);
 
   await openPage();
-  const imp = await call(`imports ${plan.size}`, IMPORTS, 180000);
-  entry.env = imp.value;
+  entry.env = await phase(`imports ${plan.size}`, call(`imports ${plan.size}`, IMPORTS, 180000));
   dump();
 
-  entry.synth = (await call(`synth ${plan.size}`, PHASES.synth(plan.size), 300000)).value; dump();
-  await call(`layoutStart ${plan.size}`, PHASES.layoutStart(), 60000);
+  entry.synth = await phase(`synth ${plan.size}`, call(`synth ${plan.size}`, PHASES.synth(plan.size), 300000)); dump();
+  await phase(`layoutStart ${plan.size}`, call(`layoutStart ${plan.size}`, PHASES.layoutStart(), 60000));
   for (let chunk = 1; chunk <= 200; chunk++) {
     const r = await call(`layoutChunk ${plan.size} #${chunk}`, PHASES.layoutChunk(plan.layoutChunk), plan.layoutTimeoutMs);
-    if (!r.value) { entry.layoutError = r.error || 'timeout'; break; }
+    if (r.value === undefined) await shutdown(1, `layoutChunk ${plan.size} #${chunk}: ${r.timedOut ? 'timeout' : r.error || 'no value'}`);
     entry.layout = { chunkMs: r.value.chunkMs, cumulativeMs: r.value.cumulativeMs, steps: r.value.steps };
     if (r.value.done) break;
   }
-  entry.atlas = (await call(`atlas ${plan.size}`, PHASES.atlas(), 300000)).value; dump();
-  entry.payload = (await call(`payload ${plan.size}`, PHASES.payload(), 300000)).value; dump();
-  entry.attach = (await call(`attach ${plan.size}`, PHASES.attach(), 120000)).value; dump();
+  entry.atlas = await phase(`atlas ${plan.size}`, call(`atlas ${plan.size}`, PHASES.atlas(), 300000)); dump();
+  entry.payload = await phase(`payload ${plan.size}`, call(`payload ${plan.size}`, PHASES.payload(), 300000)); dump();
+  entry.attach = await phase(`attach ${plan.size}`, call(`attach ${plan.size}`, PHASES.attach(), 120000)); dump();
 
   for (let i = 0; i < plan.frameCalls; i++) {
-    const r = await call(`frames ${plan.size} #${i + 1}`, PHASES.frames(plan.framesPer), plan.framesTimeoutMs);
-    entry[`frames${i + 1}`] = r.value; dump();
+    entry[`frames${i + 1}`] = await phase(`frames ${plan.size} #${i + 1}`,
+      call(`frames ${plan.size} #${i + 1}`, PHASES.frames(plan.framesPer), plan.framesTimeoutMs)); dump();
   }
 
-  entry.picks = (await call(`picks ${plan.size}`, PHASES.picks(plan.grid, plan.steady), plan.pickTimeoutMs)).value; dump();
-  entry.longTasks = (await call(`longtasks ${plan.size}`, PHASES.longtasks(), 60000)).value;
+  entry.picks = await phase(`picks ${plan.size}`, call(`picks ${plan.size}`, PHASES.picks(plan.grid, plan.steady), plan.pickTimeoutMs)); dump();
+  entry.longTasks = await phase(`longtasks ${plan.size}`, call(`longtasks ${plan.size}`, PHASES.longtasks(), 60000));
   await call(`dispose ${plan.size}`, PHASES.dispose(), 60000);
   dump();
 }
@@ -276,11 +314,12 @@ for (const s of RESULTS.sizes) {
   p(`${s.size}: layout=${s.layout?.cumulativeMs}ms attach=${s.attach?.attachMs}ms`
     + ` frames=${(s.frames1?.frames || 0)}+${(s.frames2?.frames || 0)} renderP95=${f.renderP95}ms gapP50=${f.gapP50}ms`
     + ` payload=${pay.bytes ? (pay.bytes / 1048576).toFixed(1) + 'MiB' : 'n/a'} parse=${pay.parseMs}ms validate=${pay.validateMs}ms`
-    + ` pickP95=${pick.steadyP95}ms atlas=${s.atlas?.ms}ms`);
+    + ` pickP95=${pick.steadyP95}ms pickGridP95=${pick.gridP95}ms atlas=${s.atlas?.ms}ms`);
 }
 RESULTS.note = 'layout is called synchronously by the harness; the app runs the same generator in memory-network-layout.worker.ts';
-dump();
-try { chrome.kill(); } catch { /* ignore */ }
-try { dev.kill(); } catch { /* ignore */ }
-p(`results: ${OUT}`);
-process.exit(0);
+// The pick phase renders between picks, so `picks.grid*` is the cost of the spatial hash
+// rebuild plus the lookup, while `picks.steady*` is a lookup against an already-built grid.
+RESULTS.pickMethod = 'grid pass: camera yaw +0.01 then render() before each timed hit(); steady pass: hit() only';
+RESULTS.harness = 'scripts/bench-memory-3d.mjs';
+// shutdown() closes the browser and the dev server and exits with the given code.
+await shutdown(0);
