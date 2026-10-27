@@ -65,7 +65,9 @@ void main() {
     1.0
   );
   float size = aRadius * uBaseScale * uZoom * perspective;
-  gl_PointSize = clamp(size, 1.0, 64.0);
+  // gl_PointSize is the sprite's full DIAMETER in device pixels while aRadius is
+  // a radius, so the sprite is twice the radius (review #89).
+  gl_PointSize = clamp(size * 2.0, 1.0, 128.0);
   vColor = vec4(aColor.rgb, aColor.a * clamp(perspective, 0.4, 1.0));
   vPointRadius = size;
 }`;

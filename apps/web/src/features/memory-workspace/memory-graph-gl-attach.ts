@@ -305,7 +305,9 @@ export function attachWebGLGraph(attach: {
     const state = getState();
     const context = overlayContext;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    if (overlay.width !== Math.round(width * dpr)) {
+    if (overlay.width !== Math.round(width * dpr) || overlay.height !== Math.round(height * dpr)) {
+      // Both dimensions: a DPR change or a height-only resize moves neither width
+      // nor the previous guard, which left the overlay buffer stale (review #89).
       overlay.width = Math.max(1, Math.round(width * dpr));
       overlay.height = Math.max(1, Math.round(height * dpr));
     }
