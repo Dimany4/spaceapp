@@ -102,9 +102,12 @@ async function openPage() {
   const att = await send('Target.attachToTarget', { targetId, flatten: true });
   sid = att.result.sessionId;
   await send('Runtime.enable', {}, sid);
+  // Wait for the *app* document, not for the first document that reports "complete":
+  // a freshly created target answers with about:blank in which '/src/...' cannot resolve.
   for (let i = 0; i < 120; i++) {
-    const r = await send('Runtime.evaluate', { expression: 'document.readyState', returnByValue: true }, sid);
-    if ((r.result?.result?.value || '') === 'complete') break;
+    const r = await send('Runtime.evaluate', { expression: 'document.readyState + "|" + location.href', returnByValue: true }, sid);
+    const v = r.result?.result?.value || '';
+    if (v.startsWith('complete|') && v.includes(String(PORT))) break;
     await sleep(500);
   }
   return sid;
