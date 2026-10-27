@@ -72,9 +72,15 @@ export function MemoryGraph3D({ nodes, edges, positions, coordinates, showTitles
           } else { cameraRef.current.yaw += (p.x - previous.x) * 0.009; cameraRef.current.pitch += (p.y - previous.y) * 0.009; }
           pointers.set(event.pointerId, p);
         } else {
-          hover = gl.hit(p.x, p.y);
-          gl.setFocus(hover);
-          canvas.style.cursor = hover ? "pointer" : "grab";
+          // Review #89: re-focus only when the hovered node changes. setFocus marks
+          // the colour buffers dirty and applyFocus walks every edge, so doing it on
+          // every pointer move costs ~1.4M floats and two uploads at 50k nodes.
+          const next = gl.hit(p.x, p.y);
+          if (next !== hover) {
+            hover = next;
+            gl.setFocus(next);
+            canvas.style.cursor = next ? "pointer" : "grab";
+          }
         }
         schedule();
       };
@@ -102,6 +108,10 @@ export function MemoryGraph3D({ nodes, edges, positions, coordinates, showTitles
   // leaving a blank view (issue #62 review fix).
   const context = canvas.getContext("2d") ?? overlay.getContext("2d");
   if (!context) return;
+  // Review #89: after a failed WebGL init the 2D bitmap lives on the overlay canvas,
+  // so the resize must size whichever canvas actually owns this context — otherwise
+  // the fallback keeps a 300x150 bitmap and the graph is clipped and stretched.
+  const surface = context.canvas;
   const render = () => {
     frame = 0;
     const { nodes, edges, positions, coordinates, showTitles, selectedNodeId } = current.current;
@@ -160,7 +170,7 @@ export function MemoryGraph3D({ nodes, edges, positions, coordinates, showTitles
   const resize = () => {
     const rect = canvas.getBoundingClientRect(); width = rect.width; height = rect.height;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    surface.width = Math.round(width * dpr); surface.height = Math.round(height * dpr);
     context.setTransform(dpr, 0, 0, dpr, 0, 0); schedule();
   };
   const hit = (x: number, y: number) => [...points].reverse().find(p => Math.hypot(p.x - x, p.y - y) < Math.max(7, p.radius + 3))?.id ?? null;
