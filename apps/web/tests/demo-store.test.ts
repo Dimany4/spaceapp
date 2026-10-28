@@ -429,6 +429,33 @@ describe("Space deterministic demo store", () => {
     expect(unchangedChangeSet).toEqual(changeSet);
   });
 
+  it("serves a synthetic overview that is isolated from the cache and details with real neighbours (issue #89)", async () => {
+    const store = new DemoStore();
+    const first = await store.api.memoryGraphOverview({ limit: 2000 });
+    expect(first.data.nodes).toHaveLength(2000);
+
+    // The overview no longer clones the cached graph internally; the payload it returns
+    // must still be detached from the cache, so edits cannot leak into the next request.
+    first.data.nodes[0]!.label = "mutated-by-test";
+    const second = await store.api.memoryGraphOverview({ limit: 2000 });
+    expect(second.data.nodes[0]!.label).not.toBe("mutated-by-test");
+
+    const connected = second.data.nodes.find((node) =>
+      second.data.edges.some((edge) => edge.source === node.id || edge.target === node.id));
+    expect(connected).toBeDefined();
+
+    const detail = await store.api.memoryGraphNode(connected!.id);
+    expect(memoryGraphNodeDetailSchema.parse(detail)).toEqual(detail);
+    expect(detail.node.id).toBe(connected!.id);
+    expect(detail.relatedNodes.length).toBeGreaterThan(0);
+    expect(detail.relatedEdges.length).toBeGreaterThan(0);
+    expect(detail.relatedNodes.length).toBeLessThanOrEqual(24);
+    expect(detail.relatedEdges.length).toBeLessThanOrEqual(24);
+    for (const edge of detail.relatedEdges) {
+      expect(edge.source === connected!.id || edge.target === connected!.id).toBe(true);
+    }
+  });
+
   it("keeps Links and Clipboard CRUD local, deterministic, and contract-valid", async () => {
     const store = new DemoStore();
 

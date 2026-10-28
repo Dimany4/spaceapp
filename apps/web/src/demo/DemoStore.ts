@@ -21,6 +21,7 @@ import type {
   CreateUserLinkRequest,
   MemoryChangeSet,
   MemoryChangeSetSummary,
+  MemoryGraphEdge,
   MemoryGraphNode,
   MemoryGraphPayload,
   Pane,
@@ -57,6 +58,11 @@ import { MockServices } from "./mock-services.js";
 import { getCliMockTranscript, getCliMockModel, getCliMockCwd, getCliMockDefinition } from "./mock-cli-transcripts.js";
 
 export const DEMO_WARNING = "DEMO MODE — Everything is simulated locally. No production service is connected.";
+
+// Review #89: how many adjacent nodes/edges the synthetic node detail returns. The
+// contract allows 500/1000, but a detail panel needs a handful, and a fixed cap keeps
+// the response the same size at 2k and 50k nodes.
+const SYNTHETIC_DETAIL_NEIGHBOURS = 24;
 export { DEMO_LOCAL_REPLY } from "../runtime/SpaceRuntime.js";
 
 function paginated<T>(data: T[]) {
@@ -211,6 +217,10 @@ export class DemoStore {
   // benchmark locally; sizes are cached so repeat visits stay stable.
   private syntheticCache = new Map<number, MemoryGraphPayload>();
   private syntheticNodes = new Map<string, MemoryGraphNode>();
+  // Review #89: which graph a synthetic node came from, plus a lazily built adjacency
+  // index per graph size, so the node detail can return real neighbours.
+  private syntheticNodeSize = new Map<string, number>();
+  private syntheticNeighbourhoods = new Map<number, Map<string, { nodes: string[]; edges: MemoryGraphEdge[] }>>();
   private cliRuntimeEnabled = new Map<CliToggleRuntimeId, boolean>(
     cliToggleRuntimeIds.map((runtimeId) => [runtimeId, true])
   );
@@ -680,9 +690,35 @@ export class DemoStore {
     if (!graph) {
       graph = createSyntheticMemoryGraph(total);
       this.syntheticCache.set(total, graph);
-      for (const node of graph.nodes) this.syntheticNodes.set(node.id, node);
+      for (const node of graph.nodes) {
+        this.syntheticNodes.set(node.id, node);
+        this.syntheticNodeSize.set(node.id, total);
+      }
     }
-    return structuredClone(graph);
+    // Review #89: no clone here. `memoryGraph` already clones the filtered payload it
+    // returns, so this second full-graph copy only did ~38 MiB of work per overview
+    // request at the 50k size and never protected anything.
+    return graph;
+  }
+
+  private neighbourhoodFor(total: number, graph: MemoryGraphPayload) {
+    let index = this.syntheticNeighbourhoods.get(total);
+    if (!index) {
+      index = new Map();
+      for (const edge of graph.edges) {
+        for (const [from, to] of [[edge.source, edge.target], [edge.target, edge.source]] as const) {
+          let bucket = index.get(from);
+          if (!bucket) {
+            bucket = { nodes: [], edges: [] };
+            index.set(from, bucket);
+          }
+          bucket.nodes.push(to);
+          bucket.edges.push(edge);
+        }
+      }
+      this.syntheticNeighbourhoods.set(total, index);
+    }
+    return index;
   }
 
   private memoryGraph(query: DemoMemoryGraphQuery = {}): MemoryGraphPayload {
@@ -1617,7 +1653,22 @@ export class DemoStore {
         // a contract-valid detail shell for their nodes.
         const node = this.syntheticNodes.get(roomId ?? "");
         if (node) {
-          return Promise.resolve({ node: structuredClone(node), record: null, relatedNodes: [], relatedEdges: [], issues: [] });
+          // Review #89: a synthetic node has no fixture record, but the cached graph does
+          // connect it — return a bounded neighbourhood instead of empty arrays, so the
+          // detail panel has something to explore.
+          const total = this.syntheticNodeSize.get(node.id);
+          const graph = total === undefined ? undefined : this.syntheticCache.get(total);
+          const bucket = total === undefined || !graph ? undefined : this.neighbourhoodFor(total, graph).get(node.id);
+          const relatedNodes = (bucket?.nodes ?? []).slice(0, SYNTHETIC_DETAIL_NEIGHBOURS)
+            .flatMap((id) => { const related = this.syntheticNodes.get(id); return related ? [related] : []; });
+          const relatedEdges = (bucket?.edges ?? []).slice(0, SYNTHETIC_DETAIL_NEIGHBOURS);
+          return Promise.resolve({
+            node: structuredClone(node),
+            record: null,
+            relatedNodes: structuredClone(relatedNodes),
+            relatedEdges: structuredClone(relatedEdges),
+            issues: []
+          });
         }
         throw new SpaceApiError("Memory node not found.", { status: 404, code: "NOT_FOUND" });
       }

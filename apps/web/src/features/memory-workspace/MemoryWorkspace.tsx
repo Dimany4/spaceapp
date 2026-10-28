@@ -108,7 +108,12 @@ export function MemoryWorkspace({ shellMode, onClose, initialMode = "calendar" }
   useEffect(() => {
     if (workspaceMode !== "atlas" || !atlas.nodes.length || typeof Worker === "undefined") return;
     const worker = new Worker(new URL("./memory-network-layout.worker.ts", import.meta.url), { type: "module" });
+    // Review #89: terminate() stops the worker, but a message it already queued can still
+    // reach this handler. A late final message from the previous atlas would clear
+    // `stream` and install the old layout, so messages from a superseded worker are ignored.
+    let active = true;
     worker.onmessage = (event: MessageEvent<{ type?: string; positions?: Array<[string, { x: number; y: number }]>; depth?: Array<[string, { x: number; y: number; z: number }]>; coordinates?: Array<[string, { x: number; y: number; z: number }]>; step?: number; totalSteps?: number }>) => {
+      if (!active) return;
       // Progress messages (issue #62) stream incremental layout steps so the
       // view refines while the simulation converges; the final message carries
       // the full positions/depth payload.
@@ -121,9 +126,13 @@ export function MemoryWorkspace({ shellMode, onClose, initialMode = "calendar" }
       setLayout({ atlas, depth: new Map(event.data.depth), positions: new Map([...atlas.positions].map(([id, position]) => [id, { ...position, ...flat.get(id) }])) });
       worker.terminate();
     };
-    worker.onerror = event => { setError(`Memory layout could not be calculated: ${event.message || "worker unavailable"}`); worker.terminate(); };
+    worker.onerror = event => {
+      if (!active) return;
+      setError(`Memory layout could not be calculated: ${event.message || "worker unavailable"}`);
+      worker.terminate();
+    };
     worker.postMessage({ nodes: atlas.nodes, edges: atlas.edges });
-    return () => worker.terminate();
+    return () => { active = false; worker.terminate(); };
   }, [workspaceMode, atlas]);
   const layoutPending = typeof Worker !== "undefined" && atlas.nodes.length > 0 && layout?.atlas !== atlas;
   const atlasPositions = layout?.atlas === atlas ? layout.positions : atlas.positions;
